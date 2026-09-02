@@ -14,8 +14,27 @@ def count_neighbors(grid, row, col):
     """
     
     alive_count = 0
-    
-    # TODO: Implement your neighbor-counting logic here!
+
+    rows = len(grid)
+    cols = len(grid[0]) if rows > 0 else 0
+
+    # The 8 neighbors are every (row + dr, col + dc) combination where dr and
+    # dc each range over -1, 0, +1 -- except (0, 0), which is the cell itself.
+    for dr in (-1, 0, 1):
+        for dc in (-1, 0, 1):
+            if dr == 0 and dc == 0:
+                continue  # skip the cell itself; we only want its neighbors
+
+            nr = row + dr
+            nc = col + dc
+
+            # Only look at neighbors that actually exist inside the grid.
+            # The lower bound (>= 0) is critical: a negative index would
+            # silently wrap to the opposite edge instead of being ignored.
+            if 0 <= nr < rows and 0 <= nc < cols:
+                # A cell's value is already 1 (alive) or 0 (dead), so adding
+                # the value directly is the same as "add 1 if alive".
+                alive_count += grid[nr][nc]
 
     return alive_count
 
@@ -42,8 +61,19 @@ def compute_next_generation(grid):
     # Create a new blank grid of the same size, filled with 0s (dead cells)
     next_grid = [[0 for _ in range(cols)] for _ in range(rows)]
     
-    # TODO: Iterate through every cell in the `grid`.
-    # TODO: Use your `count_neighbors` function to find out how many neighbors it has.
-    # TODO: Apply the 4 Rules of Life to determine if it should be 1 (alive) or 0 (dead) in `next_grid`.
+    # Visit every cell, always reading from the original `grid` snapshot and
+    # writing results into `next_grid` so this generation stays untouched.
+    for r in range(rows):
+        for c in range(cols):
+            neighbors = count_neighbors(grid, r, c)
+            is_alive = grid[r][c] == 1
+
+            # The four rules collapse into two cases that produce a live cell:
+            #   - exactly 3 neighbors: alive next gen no matter the current state
+            #     (this is both "reproduction" and "survival with 3")
+            #   - currently alive with exactly 2 neighbors: survives
+            # Every other case stays dead, which next_grid already defaults to.
+            if neighbors == 3 or (is_alive and neighbors == 2):
+                next_grid[r][c] = 1
 
     return next_grid
